@@ -5,6 +5,7 @@ Artist, Venue and Show models
 """
 # Imports
 
+import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 db = SQLAlchemy()
@@ -39,7 +40,7 @@ class Artist(db.Model):
             'city': self.city,
             'state': self.state,
             'phone': self.phone,
-            'genres': self.genres.split(','),  # convert string to list
+            'genres': self.genres.split(','), 
             'image_link': self.image_link,
             'facebook_link': self.facebook_link,
             'website': self.website,
@@ -65,12 +66,11 @@ class Venue(db.Model):
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
     website = db.Column(db.String(120))
-    seeking_talent = db.Column(db.Boolean, nullable=False, default=False)
+    seeking_talent = db.Column(db.Boolean, nullable=False, default=False, server_default="false")
     seeking_description = db.Column(db.String(120))
 
     artists = db.relationship('Artist', secondary='shows')
     shows = db.relationship('Show', backref=('venues'))
-
     def to_dict(self):
         
         return {
@@ -80,14 +80,34 @@ class Venue(db.Model):
             'state': self.state,
             'address': self.address,
             'phone': self.phone,
-            'genres': self.genres.split(','),  # convert string to list
+            'genres': self.genres.split(','), 
             'image_link': self.image_link,
             'facebook_link': self.facebook_link,
             'website': self.website,
             'seeking_talent': self.seeking_talent,
             'seeking_description': self.seeking_description,
         }
-
+    @property
+    def filter_on_city_state(self):
+        return {'city': self.city,
+                'state': self.state,
+                'venues': [v.shows_count
+                           for v in Venue.query.filter(Venue.city == self.city, Venue.state == self.state).all()]}
+    @property
+    def shows_count(self):
+        return {'id': self.id,
+                'name': self.name,
+                'city': self.city,
+                'state': self.state,
+                'phone': self.phone,
+                'address': self.address,
+                'image_link': self.image_link,
+                'facebook_link': self.facebook_link,
+                'website': self.website,
+                'seeking_talent': self.seeking_talent,
+                'seeking_description': self.seeking_description,
+                'num_shows': Show.query.filter(Show.start_time > datetime.datetime.now(), Show.venue_id == self.id)
+                }
     def __repr__(self):
         return f'<Venue {self.id} {self.name}>'
 

@@ -70,32 +70,9 @@ def index():
 def venues():
     venues = Venue.query.order_by(Venue.state, Venue.city, Venue.id).all()
     #print(venues)
-    data = []
-    tmp = {}
-    prev_city = None
-    prev_state = None
-    for venue in venues:
-        venue_data = {
-            'id': venue.id,
-            'name': venue.name,
-            'num_upcoming_shows': len(list(filter(lambda x: x.start_time > datetime.today(), venue.shows)))
-        }
-    
-    if venue.city == prev_city and venue.state == prev_state:
-        tmp['venues'].append(venue_data)
-        #print(tmp)
-        print(venues)
-    else:
-        if prev_city is not None:
-          data.append(tmp)
-        tmp['city'] = venue.city
-        tmp['state'] = venue.state
-        tmp['venues'] = [venue_data]
-        prev_city = venue.city
-        prev_state = venue.state
-        print(venues)
-        data.append(tmp)
-        return render_template('pages/venues.html', areas=data)
+    data = [ucs.filter_on_city_state for ucs in venues]
+    #print(data)
+    return render_template('pages/venues.html', areas=data)
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
@@ -247,7 +224,6 @@ def edit_artist_submission(artist_id):
     artist = Artist.query.get(artist_id)
     error = False
     try:
-        
         artist.name = request.form['name']
         artist.city = request.form['city']
         artist.state = request.form['state']
@@ -257,18 +233,15 @@ def edit_artist_submission(artist_id):
         artist.website_link = request.form['website_link']
         artist.image_link = request.form['image_link']
         artist.facebook_link = request.form['facebook_link']
-        artist.seeking_venue =  request.form['seeking_venue']
         artist.seeking_description = request.form['seeking_description']
         db.session.add(artist)
         db.session.commit()
        
     except:
-       
         error = True
         db.session.rollback()
         print(sys.exc_info())
     finally:
-       
         db.session.close()
         if error:
           flash('An error occurred. Artist ' + request.form['name'] + ' could not be updated.')
