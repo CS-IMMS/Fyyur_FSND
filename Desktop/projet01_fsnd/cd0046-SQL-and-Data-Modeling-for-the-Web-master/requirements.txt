@@ -9,3 +9,4 @@ Flask-Migrate
 psycopg2-binary
 sqlalchemy_utils
 flask_script
+phonenumbers

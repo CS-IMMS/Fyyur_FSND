@@ -22,7 +22,7 @@ class Artist(db.Model):
     city = db.Column(db.String(120))
     state = db.Column(db.String(120))
     phone = db.Column(db.String(120))
-    genres = db.Column(db.String(120))
+    genres = db.Column(db.ARRAY(db.String), nullable=False)
     website = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
@@ -40,7 +40,7 @@ class Artist(db.Model):
             'city': self.city,
             'state': self.state,
             'phone': self.phone,
-            'genres': self.genres.split(','), 
+            'genres': self.genres, 
             'image_link': self.image_link,
             'facebook_link': self.facebook_link,
             'website': self.website,
@@ -62,7 +62,7 @@ class Venue(db.Model):
     state = db.Column(db.String(120))
     address = db.Column(db.String(120))
     phone = db.Column(db.String(120))
-    genres = db.Column(db.String(120))
+    genres = db.Column(db.ARRAY(db.String), nullable=False)
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
     website = db.Column(db.String(120))
@@ -80,7 +80,7 @@ class Venue(db.Model):
             'state': self.state,
             'address': self.address,
             'phone': self.phone,
-            'genres': self.genres.split(','), 
+            'genres': self.genres, 
             'image_link': self.image_link,
             'facebook_link': self.facebook_link,
             'website': self.website,

@@ -31,7 +31,7 @@ moment = Moment(app)
 app.config.from_object('config')
 db.init_app(app)
 migrate = Migrate(app, db)
-
+app.config['SECRET_KEY']
 SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:drimms19@localhost:5432/alx'
 collections.Callable = collections.abc.Callable
 #SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:drimms19@localhost:5432/alx'
@@ -72,6 +72,7 @@ def venues():
     #print(venues)
     data = [ucs.filter_on_city_state for ucs in venues]
     #print(data)
+    
     return render_template('pages/venues.html', areas=data)
 
 @app.route('/venues/search', methods=['POST'])
@@ -98,7 +99,15 @@ def search_venues():
 
 def show_venue(venue_id):
     venue = Venue.query.get(venue_id)
-    #print(venue)
+    def fix_json_array(obj, attr):
+      arr = getattr(obj, attr)
+      if isinstance(arr, list) and len(arr) > 1 and arr[0] == '{':
+          arr = arr[1:-1]
+          arr = "".join(arr).split(",")
+
+          setattr(obj,attr, arr)
+    fix_json_array(venue, "genres")
+    #print(venue.genres)
     past_shows = list(filter(lambda x: x.start_time < datetime.today(), venue.shows))
     upcoming_shows = list(filter(lambda x: x.start_time >= datetime.today(), venue.shows))
 
@@ -128,30 +137,50 @@ def create_venue_submission():
   # TODO: insert form data as a new Venue record in the db, instead
   # TODO: modify data to be the data object returned from db insertion
     error = False
-    try:
-      venue = Venue()
-      venue.name = request.form['name']
-      venue.city = request.form['city']
-      venue.state = request.form['state']
-      venue.address = request.form['address']
-      venue.phone = request.form['phone']
-      tmp_genres = request.form.getlist('genres')
-      venue.genres = ','.join(tmp_genres)
-      venue.facebook_link = request.form['facebook_link']
-      db.session.add(venue)
-      db.session.commit()
-    except:
-      error = True
-      db.session.rollback()
-      print(sys.exc_info())
-    finally:
-      db.session.close()
-      if error:
-        flash('An error occurred. Venue ' + request.form['name'] + ' could not be listed.')
-      else:
-       
-        flash('Venue ' + request.form['name'] + ' was successfully listed!')
-    return render_template('pages/home.html')
+    form = VenueForm()
+    venue = Venue()
+    def fix_json_array(obj, attr):
+      arr = getattr(obj, attr)
+      if isinstance(arr, list) and len(arr) > 1 and arr[0] == '{':
+          arr = arr[1:-1]
+          arr = ''.join(arr).split(",")
+          setattr(obj,attr, arr)
+    fix_json_array(request.form['phone'], "genres")
+    print(venue)
+    if form.validate_on_submit:
+      try:
+        
+        venue.name = request.form['name']
+        venue.city = request.form['city']
+        venue.state = request.form['state']
+        venue.address = request.form['address']
+        venue.phone = request.form['phone']
+        venue.genres = request.form.getlist('genres')
+        #venue.genres = 
+        #print(venue.phone)
+        #venue.genres = "', ".join(tmp_genres)
+        venue.facebook_link = request.form['facebook_link']
+        if venue.phone.isdigit():
+          db.session.add(venue)
+          db.session.commit()
+        else :
+          error = True
+          db.session.rollback()
+          flash('Error, phone number :' + request.form['phone'] +  ' must be in format xxx-xxx-xxxx"')
+      except:
+        error = True
+        db.session.rollback()
+        print(sys.exc_info())
+      finally:
+        db.session.close()
+        if error:
+          flash('An error occurred. Venue ' + request.form['name'] + ' could not be listed.')
+        else:
+        
+          flash('Venue ' + request.form['name'] + ' was successfully listed!')
+      return render_template('pages/home.html')
+    else:
+      flash('An error occurred an form is not valid')
   # on successful db insert, flash success
   
   # TODO: on unsuccessful db insert, flash an error instead.
@@ -193,7 +222,13 @@ def show_artist(artist_id):
   # shows the artist page with the given artist_id
   # TODO: replace with real artist data from the artist table, using artist_id
   artist = Artist.query.get(artist_id)
-  
+  def fix_json_array(obj, attr):
+      arr = getattr(obj, attr)
+      if isinstance(arr, list) and len(arr) > 1 and arr[0] == '{':
+          arr = arr[1:-1]
+          arr = ''.join(arr).split(",")
+          setattr(obj,attr, arr)
+  fix_json_array(artist, "genres")
   
   past_shows = list(filter(lambda d: d.start_time < datetime.today(), artist.shows))
   upcoming_shows = list(filter(lambda d: d.start_time >= datetime.today(), artist.shows))
@@ -234,8 +269,13 @@ def edit_artist_submission(artist_id):
         artist.image_link = request.form['image_link']
         artist.facebook_link = request.form['facebook_link']
         artist.seeking_description = request.form['seeking_description']
-        db.session.add(artist)
-        db.session.commit()
+        if artist.phone.isdigit():
+          db.session.add(artist)
+          db.session.commit()
+        else :
+          error = True
+          db.session.rollback()
+          flash('Error, phone number :' + request.form['phone'] + ' ' +  ' must be in format xxx-xxx-xxxx"')
        
     except:
         error = True
@@ -272,8 +312,13 @@ def edit_venue_submission(venue_id):
     tmp_genres = request.form.getlist('genres')
     venue.genres = ','.join(tmp_genres)  
     venue.facebook_link = request.form['facebook_link']
-    db.session.add(venue)
-    db.session.commit()
+    if venue.phone.isdigit():
+          db.session.add(venue)
+          db.session.commit()
+    else :
+      error = True
+      db.session.rollback()
+      flash('Error, phone number :' + request.form['phone'] + ' ' +  ' is not valid' +  ' must be in format xxx-xxx-xxxx')
   except:
     error = True
     db.session.rollback()
@@ -299,20 +344,29 @@ def create_artist_form():
 def create_artist_submission():
     form = ArtistForm()
     error = False
+    artist = Artist()
+
     try:
-        artist = Artist()
+        
         artist.name = request.form['name']
         artist.city = request.form['city']
         artist.state = request.form['state']
         artist.phone = request.form['phone']
-        tmp_genres = request.form.getlist('genres')
-        artist.genres = ','.join(tmp_genres)
+        print(artist.phone.isdigit())
+        artist.genres= request.form.getlist('genres')
+        #artist.genres = ','.join(tmp_genres)
         artist.website_link = request.form['website_link']
         artist.image_link = request.form['image_link']
         artist.facebook_link = request.form['facebook_link']
         artist.seeking_description = request.form['seeking_description']
-        db.session.add(artist)
-        db.session.commit()
+
+        if artist.phone.isdigit():
+          db.session.add(artist)
+          db.session.commit()
+        else :
+          error = True
+          db.session.rollback()
+          flash('Error, phone number :' + request.form['phone'] +  ' must be in format xxx-xxx-xxxx"')
     except:
         error = True
         db.session.rollback()

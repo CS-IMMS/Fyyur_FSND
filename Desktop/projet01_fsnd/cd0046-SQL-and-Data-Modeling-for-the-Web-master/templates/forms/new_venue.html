@@ -26,11 +26,17 @@
       <div class="form-group">
           <label for="phone">Phone</label>
           {{ form.phone(class_ = 'form-control', placeholder='xxx-xxx-xxxx', autofocus = true) }}
+          {% for error in form.phone.errors %}
+            {{ error }}
+          {% endfor %}
         </div>
       <div class="form-group">
         <label for="genres">Genres</label>
         <small>Ctrl+Click to select multiple</small>
         {{ form.genres(class_ = 'form-control', placeholder='Genres, separated by commas', autofocus = true) }}
+        {% for error in form.genres.errors %}
+            {{ error }}
+        {% endfor %}
       </div>
       
       <div class="form-group">
